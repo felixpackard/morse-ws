@@ -23,7 +23,7 @@ const server = Bun.serve<WebSocketData>({
     }
 
     // handle HTTP request normally
-    return serveStatic("../client/dist")(req);
+    return serveStatic("public")(req);
   },
   websocket: {
     publishToSelf: false,
