@@ -1,0 +1,11 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  @apply select-none;
+}
+
+body {
+  @apply select-none overflow-hidden bg-slate-900;
+}
