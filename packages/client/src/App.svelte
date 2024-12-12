@@ -289,7 +289,7 @@
   {#if initialised}
     <div class="flex h-svh items-center justify-center bg-slate-900">
       <div
-        class="xs:w-[400px] xs:rounded-md flex w-full flex-col bg-slate-700 font-mono text-white shadow-md">
+        class="xs:w-[400px] xs:rounded-md flex w-full flex-col bg-slate-700 font-mono text-slate-100 shadow-md">
         <div class="flex items-center justify-between p-4">
           <span>{socketState}</span>
           <span class="flex items-center gap-2">
