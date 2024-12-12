@@ -6,6 +6,7 @@
     "start": "bun index.ts"
   },
   "dependencies": {
+    "serve-static-bun": "^0.5.3",
     "shared": "workspace:*"
   },
   "devDependencies": {

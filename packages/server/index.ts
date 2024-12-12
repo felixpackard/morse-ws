@@ -1,3 +1,4 @@
+import serveStatic from "serve-static-bun";
 import { CommandType, parseCommand } from "shared/command";
 import { CommandError, ParseError } from "shared/error";
 import {
@@ -13,13 +14,16 @@ let connected = 0;
 
 const server = Bun.serve<WebSocketData>({
   fetch(req, server) {
-    const upgraded = server.upgrade(req);
-    if (!upgraded) {
-      return new Response("Upgrade failed", { status: 400 });
+    const path = new URL(req.url).pathname;
+    if (path === "/ws") {
+      const upgraded = server.upgrade(req);
+      if (!upgraded) {
+        return new Response("Upgrade failed", { status: 400 });
+      }
     }
 
     // handle HTTP request normally
-    return new Response("Hello world!");
+    return serveStatic("../client/dist")(req);
   },
   websocket: {
     publishToSelf: false,

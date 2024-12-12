@@ -105,7 +105,7 @@
   }
 
   function setupSocket() {
-    const socket = new WebSocket("ws://192.168.1.10:3000/");
+    const socket = new WebSocket("wss://morse.felixpackard.dev/ws");
 
     socket.onopen = function () {
       socketConnected = true;
