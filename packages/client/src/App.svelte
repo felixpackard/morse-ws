@@ -7,12 +7,20 @@
   } from "shared/command";
   import { encodeRESP, parseRESP, RESPType } from "shared/resplite";
   import { onDestroy, onMount } from "svelte";
+  import { AudioWaveform } from "lucide-svelte";
 
   const BUFFER_DELAY = 1000;
+  const BASE_RETRY_TIME = 1000;
+
+  type SocketState =
+    | "Connected"
+    | "Disconnected"
+    | "Connecting..."
+    | "Reconnecting...";
 
   let initialised = $state(false);
   let muted = $state(false);
-  let socketConnected = $state(false);
+  let socketState: SocketState = $state("Connecting...");
   let connectedUsers = $state(0);
   let keyPressed = $state(false);
 
@@ -31,6 +39,7 @@
   let gainNode: GainNode | null = null;
 
   let socket: WebSocket;
+  let retryTime = BASE_RETRY_TIME;
 
   onMount(() => {
     socket = setupSocket();
@@ -105,18 +114,28 @@
   }
 
   function setupSocket() {
-    const socket = new WebSocket("wss://morse.felixpackard.dev/ws");
+    const socket = new WebSocket(
+      import.meta.env.DEV
+        ? `ws://${window.location.hostname}:3000/ws`
+        : "wss://morse.felixpackard.dev/ws",
+    );
 
     socket.onopen = function () {
-      socketConnected = true;
+      socketState = "Connected";
+      retryTime = BASE_RETRY_TIME;
     };
 
-    socket.onclose = function () {
-      socketConnected = false;
+    socket.onclose = function (event) {
+      if (!event.wasClean) {
+        socketState = "Reconnecting...";
+        handleUnexpectedDisconnect();
+      } else {
+        socketState = "Disconnected";
+      }
     };
 
     socket.onerror = function () {
-      socketConnected = false;
+      socketState = "Reconnecting...";
     };
 
     socket.onmessage = function (event) {
@@ -141,6 +160,17 @@
     };
 
     return socket;
+  }
+
+  function handleUnexpectedDisconnect() {
+    socketState = "Disconnected";
+
+    setTimeout(() => {
+      socketState = "Reconnecting...";
+      socket = setupSocket();
+    }, retryTime);
+
+    retryTime *= 2;
   }
 
   function processRxBuffer() {
@@ -187,6 +217,10 @@
   }
 
   function keyDown() {
+    if (socketState !== "Connected") {
+      return;
+    }
+
     keyPressed = true;
 
     startSound();
@@ -257,10 +291,13 @@
       <div
         class="xs:w-[400px] xs:rounded-md flex w-full flex-col bg-slate-700 font-mono text-white shadow-md">
         <div class="flex items-center justify-between p-4">
-          <span>{socketConnected ? "Connected" : "Disconnected"}</span>
+          <span>{socketState}</span>
           <span class="flex items-center gap-2">
             <span class="size-3 rounded-full bg-green-500"></span>
-            <span class="text-sm text-slate-200">{connectedUsers} online</span>
+            {#if socketState === "Connected"}
+              <span class="text-sm text-slate-200"
+                >{connectedUsers} online</span>
+            {/if}
           </span>
         </div>
         <div class="p-4 pt-0">
@@ -296,11 +333,22 @@
         </div>
       </div>
     </div>
+    <div
+      class="fixed bottom-0 left-0 right-0 flex justify-center py-4 font-mono text-sm text-slate-500">
+      Made with ♥ by&nbsp;<a
+        href="https://github.com/felixpackard/morse-ws"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="underline">felixpackard</a>
+    </div>
   {:else}
     <button
       onclick={initialise}
-      class="flex h-svh w-screen items-center justify-center bg-slate-900 font-mono text-white">
-      <span>Touch or click to initialise...</span>
+      class="flex h-svh w-screen items-center justify-center bg-slate-900 font-mono text-slate-100">
+      <div class="text-balance px-4">
+        <AudioWaveform class="inline size-5" />
+        <span>Touch or click to enabled audio.</span>
+      </div>
     </button>
   {/if}
 </main>
